@@ -58,6 +58,7 @@ DRAW_FLAG: false, // gets set whenever a draw operation gets called
 SCREEN:null,
 CANVAS:null,
 KEY_PRESSED:false, // gets set whenever a key is pressed
+INTERVAL:null,
 UpdateTimers: function()
 {
   if(Processor.DELAY_REGISTER >0)
@@ -78,6 +79,8 @@ Reset: function()
   Processor.PC = 0x200;
   // Clear VRAM
   Processor.ClearVRAM()
+  // Set I address to 0
+  Processor.I = 0
   // Clear stack
   Processor.STACK = Processor.STACK.map( ()=> 0 );
   Processor.SP = 0;
@@ -99,8 +102,9 @@ Reset: function()
   // Reset timers
   Processor.DELAY_REGISTER =  0;
   Processor.SOUND_REGISTER =  0;
-
-  setInterval(Processor.UpdateTimers,Processor.REFRESH_RATE);
+  if(Processor.INTERVAL != null)
+    clearInterval(Processor.INTERVAL);
+  Processor.INTERVAL = setInterval(Processor.UpdateTimers,Processor.REFRESH_RATE);
 },
 OnKey: function(evt)
 {
@@ -135,12 +139,17 @@ LoadProgram: function(filename)
   reader.addEventListener("loadend", function()
   {
     var buffer = new Uint8Array(reader.result);
-    buffer.map((val,idx)=> Processor.MEMORY[idx + 512] = buffer[idx] )
-    Processor.PC = 512;
-    Processor.PROGRAM_LOADED = true;
+    Processor.LoadProgramBuffer(buffer);
   });
 
   reader.readAsArrayBuffer(filename);
+},
+
+LoadProgramBuffer: function(buffer)
+{
+    buffer.map((val,idx)=> Processor.MEMORY[idx + 512] = buffer[idx] )
+    Processor.PC = 512;
+    Processor.PROGRAM_LOADED = true;
 },
 
 Exec: function(opcode)
